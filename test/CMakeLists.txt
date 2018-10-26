@@ -1,5 +1,7 @@
 # https://github.com/pabloariasal/modern-cmake-sample/blob/master/libjsonutils/test/CMakeLists.txt
 
+include(GoogleTest)
+
 # Download and unpack googletest at configure time
 configure_file(${CMAKE_SOURCE_DIR}/cmake/GoogleTest-CMakeLists.txt.in ${CMAKE_BINARY_DIR}/googletest-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
@@ -34,3 +36,6 @@ target_include_directories(simd-mt-test
 )
 
 target_link_libraries(simd-mt-test gtest_main)
+
+gtest_discover_tests(simd-mt-test)
+add_test(NAME monolithic COMMAND simd-mt-test)
