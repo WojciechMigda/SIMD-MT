@@ -20,6 +20,7 @@ env:
     # Ubuntu version
     - DEPS_DIR=${TRAVIS_BUILD_DIR}/deps
 
+
 install:
   ############################################################################
   # Install a recent CMake (unless already installed on OS X)
@@ -35,10 +36,14 @@ install:
       brew install cmake || brew upgrade cmake
     fi
   - cmake --version
+  ############################################################################
+  # Check hardware in use (-march=native)
+  ############################################################################
+  - gcc -march=native -E -v - </dev/null 2>&1 | grep cc1
 
 script:
 - mkdir .build
 - cd .build
 - cmake -DCMAKE_CXX_COMPILER="g++-7" -DCMAKE_BUILD_TYPE=Release ..
-- make
+- cmake --build .
 - ctest
