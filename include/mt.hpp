@@ -51,7 +51,7 @@ struct IRNG
             MT[it] = it + seed;
         }
 
-        for (int i = 1 * NS; i < MTSZ * NS; ++i)
+        for (unsigned int i = 1 * NS; i < MTSZ * NS; ++i)
         {
             MT[i] = (1812433253UL * (MT[i - NS] ^ (MT[i - NS] >> 30)) + i / NS);
         }
@@ -62,13 +62,13 @@ struct IRNG
     {
         auto MULT1 = 2567483615UL;
 
-        for (int i = 0; i < 227 * NS; ++i)
+        for (unsigned int i = 0; i < 227 * NS; ++i)
         {
             auto y = (MT[i] & 0x8000000UL) + (MT[i + NS] & 0x7FFFFFFFUL);
 
             MT[i] = MT[i + 397 * NS] ^ (y >> 1) ^ (y & 1 ? MULT1 : 0);
         }
-        for (int i = 227 * NS; i < (MTSZ - 1) * NS; ++i)
+        for (unsigned int i = 227 * NS; i < (MTSZ - 1) * NS; ++i)
         {
             auto y = (MT[i] & 0x8000000UL) + (MT[i + NS] & 0x7FFFFFFFUL);
 
@@ -157,7 +157,7 @@ struct FRNG
             MT[it] = it + seed;
         }
 
-        for (int i = 1 * NS; i < MTSZ * NS; ++i)
+        for (unsigned int i = 1 * NS; i < MTSZ * NS; ++i)
         {
             MT[i] = (1812433253UL * (MT[i - NS] ^ (MT[i - NS] >> 30)) + i / NS);
         }
@@ -168,13 +168,13 @@ struct FRNG
     {
         auto MULT1 = 2567483615UL;
 
-        for (int i = 0; i < 227 * NS; ++i)
+        for (unsigned int i = 0; i < 227 * NS; ++i)
         {
             auto y = (MT[i] & 0x8000000UL) + (MT[i + NS] & 0x7FFFFFFFUL);
 
             MT[i] = MT[i + 397 * NS] ^ (y >> 1) ^ (y & 1 ? MULT1 : 0);
         }
-        for (int i = 227 * NS; i < (MTSZ - 1) * NS; ++i)
+        for (unsigned int i = 227 * NS; i < (MTSZ - 1) * NS; ++i)
         {
             auto y = (MT[i] & 0x8000000UL) + (MT[i + NS] & 0x7FFFFFFFUL);
 
