@@ -36,6 +36,7 @@ target_include_directories(simd-mt-test
 )
 
 target_link_libraries(simd-mt-test gtest_main)
+target_compile_options(simd-mt-test PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -march=native>)
 
 gtest_discover_tests(simd-mt-test)
 add_test(NAME monolithic COMMAND simd-mt-test)
