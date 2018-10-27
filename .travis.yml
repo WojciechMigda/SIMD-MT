@@ -39,7 +39,7 @@ install:
   ############################################################################
   # Check hardware in use (-march=native)
   ############################################################################
-  - gcc -march=native -E -v - </dev/null 2>&1 | grep cc1
+  - g++-7 -march=native -E -v - </dev/null 2>&1 | grep cc1
 
 script:
 - mkdir .build
