@@ -1,9 +1,17 @@
 #include <gtest/gtest.h>
 #include "mt.hpp"
 
-TEST(SimdMtTest, foo_is_not_bar)
+TEST(SimdMtTest, IRNG_can_be_created)
 {
+    IRNG rng;
 }
+
+
+TEST(SimdMtTest, FRNG_can_be_created)
+{
+    FRNG rng;
+}
+
 
 int main(int argc, char **argv)
 {
