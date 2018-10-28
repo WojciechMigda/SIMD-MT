@@ -47,6 +47,6 @@ script:
 - cmake -DCMAKE_CXX_COMPILER="g++-7" -DCMAKE_BUILD_TYPE=Release -DBENCHMARK_ENABLE_GTEST_TESTS=OFF ..
 - cmake --build .
 - ctest
-- sudo cpupower frequency-set --governor performance
+- #sudo cpupower frequency-set --governor performance
   make run_benchmark
-  sudo cpupower frequency-set --governor powersave
+  #sudo cpupower frequency-set --governor powersave
