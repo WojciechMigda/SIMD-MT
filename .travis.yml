@@ -44,7 +44,7 @@ install:
 script:
 - mkdir .build
 - cd .build
-- cmake -DCMAKE_CXX_COMPILER="g++-7" -DCMAKE_BUILD_TYPE=Release ..
+- cmake -DCMAKE_CXX_COMPILER="g++-7" -DCMAKE_BUILD_TYPE=Release -DBENCHMARK_ENABLE_GTEST_TESTS=OFF ..
 - cmake --build .
 - ctest
 - sudo cpupower frequency-set --governor performance
