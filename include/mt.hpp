@@ -27,18 +27,24 @@
 
 #include <type_traits>
 
-struct IRNG
+template<typename ValueType, unsigned int Alignment, unsigned int NumberOfStreams, typename DerivedT>
+struct BasePRNG
 {
+    using value_type = ValueType;
+    using derived_type = DerivedT;
+
     static constexpr unsigned int MTSZ = 624;
-    static constexpr unsigned int NS = 8;
+    static constexpr unsigned int alignment = Alignment;
+    static constexpr unsigned int NS = NumberOfStreams;
 
-    int index;
 
-    alignas(64) unsigned int RES[MTSZ * NS];
-    alignas(64) unsigned int MT[MTSZ * NS];
+    unsigned int index;
+
+    alignas(alignment) value_type RES[MTSZ * NS];
+    alignas(alignment) unsigned int MT[MTSZ * NS];
 
     inline
-    IRNG(int seed=1)
+    BasePRNG(int seed=1)
     {
         init(seed);
     }
@@ -88,19 +94,19 @@ struct IRNG
             y ^= y << 7  & 2636928640UL;
             y ^= y << 15 & 4022730752UL;
             y ^= y >> 18;
-            RES[it] = y;
+            RES[it] = static_cast<derived_type *>(this)->post_process(y);
         }
     }
 
     inline
-    unsigned int rand()
+    value_type rand()
     {
         if (UNLIKELY(index == 0))
         {
             generate();
         }
 
-        unsigned int y = RES[index];
+        value_type y = RES[index];
 
         if (UNLIKELY(index == MTSZ * NS - 1))
         {
@@ -115,114 +121,66 @@ struct IRNG
     }
 
     inline
-    int next()
+    value_type next()
     {
         return rand();
     }
-
-    inline
-    int next(int x)
-    {
-        return rand() % x;
-    }
-
-    inline
-    int next(int a, int b)
-    {
-        return a + (rand() % (b + 1 - a));
-    }
 };
 
-struct FRNG
+
+template<unsigned int Alignment=64, unsigned int NumberOfStreams=8>
+struct basic_IRNG : public BasePRNG<unsigned int, Alignment, NumberOfStreams, basic_IRNG<Alignment, NumberOfStreams>>
 {
-    static constexpr unsigned int MTSZ = 624;
-    static constexpr unsigned int NS = 8;
+    static constexpr unsigned int alignment = Alignment;
+    static constexpr unsigned int number_of_streams = NumberOfStreams;
 
-    int index;
+    using base_type = BasePRNG<unsigned int, Alignment, NumberOfStreams, basic_IRNG<Alignment, NumberOfStreams>>;
+    using value_type = typename base_type::value_type;
 
-    alignas(64) float RES[MTSZ * NS];
-    alignas(64) unsigned int MT[MTSZ * NS];
-
-    inline
-    FRNG(int seed=1)
+    basic_IRNG(int seed=1) : base_type(seed)
     {
-        init(seed);
     }
 
     inline
-    void init(int seed=1)
+    value_type next(unsigned int x)
     {
-        for (auto it = 0u; it < NS; ++it)
-        {
-            MT[it] = it + seed;
-        }
-
-        for (unsigned int i = 1 * NS; i < MTSZ * NS; ++i)
-        {
-            MT[i] = (1812433253UL * (MT[i - NS] ^ (MT[i - NS] >> 30)) + i / NS);
-        }
-        index = 0;
-    }
-
-    void generate()
-    {
-        auto MULT1 = 2567483615UL;
-
-        for (unsigned int i = 0; i < 227 * NS; ++i)
-        {
-            auto y = (MT[i] & 0x8000000UL) + (MT[i + NS] & 0x7FFFFFFFUL);
-
-            MT[i] = MT[i + 397 * NS] ^ (y >> 1) ^ (y & 1 ? MULT1 : 0);
-        }
-        for (unsigned int i = 227 * NS; i < (MTSZ - 1) * NS; ++i)
-        {
-            auto y = (MT[i] & 0x8000000UL) + (MT[i + NS] & 0x7FFFFFFFUL);
-
-            MT[i] = MT[i - 227 * NS] ^ (y >> 1) ^ (y & 1 ? MULT1 : 0);
-        }
-
-        for (auto it = 0u; it < NS; ++it)
-        {
-            auto y = (MT[(MTSZ - 1) * NS + it] & 0x8000000UL) + (MT[0 + it] & 0x7FFFFFFFUL);
-            MT[(MTSZ - 1) * NS + it] = MT[(MTSZ - 1 - 227) * NS + it] ^ (y >> 1) ^ (y & 1 ? MULT1 : 0);
-        }
-
-        for (auto it = 0u; it < MTSZ * NS; ++it)
-        {
-            auto y = MT[it];
-            y ^= y >> 11;
-            y ^= y << 7  & 2636928640UL;
-            y ^= y << 15 & 4022730752UL;
-            y ^= y >> 18;
-            RES[it] = (y + 0.5f) * (1.0f / 4294967296.0f);
-        }
+        return base_type::rand() % x;
     }
 
     inline
-    float rand()
+    value_type next(int a, int b)
     {
-        if (UNLIKELY(index == 0))
-        {
-            generate();
-        }
+        return a + (base_type::rand() % (b + 1 - a));
+    }
 
-        float y = RES[index];
-
-        if (UNLIKELY(index == MTSZ * NS - 1))
-        {
-            index = 0;
-        }
-        else
-        {
-            ++index;
-        }
-
+    inline
+    value_type post_process(unsigned int y)
+    {
         return y;
     }
+};
+
+using IRNG = basic_IRNG<128, 8>;
+
+
+template<unsigned int Alignment=64, unsigned int NumberOfStreams=8>
+struct basic_FRNG : public BasePRNG<float, Alignment, NumberOfStreams, basic_FRNG<Alignment, NumberOfStreams>>
+{
+    static constexpr unsigned int alignment = Alignment;
+    static constexpr unsigned int number_of_streams = NumberOfStreams;
+
+    using base_type = BasePRNG<float, Alignment, NumberOfStreams, basic_FRNG<Alignment, NumberOfStreams>>;
+    using value_type = typename base_type::value_type;
+
+    basic_FRNG(int seed=1) : base_type(seed)
+    {
+    }
 
     inline
-    float next()
+    value_type post_process(unsigned int y)
     {
-        return rand();
+        return (y + 0.5f) * (1.0f / 4294967296.0f);
     }
 };
+
+using FRNG = basic_FRNG<128, 8>;
