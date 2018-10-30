@@ -142,6 +142,12 @@ struct basic_IRNG : public BasePRNG<unsigned int, Alignment, NumberOfStreams, ba
     }
 
     inline
+    value_type next()
+    {
+        return base_type::next();
+    }
+
+    inline
     value_type next(unsigned int x)
     {
         return base_type::rand() % x;
