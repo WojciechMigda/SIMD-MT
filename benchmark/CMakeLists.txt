@@ -20,6 +20,10 @@ add_subdirectory(${CMAKE_BINARY_DIR}/googlebenchmark-src
 
 
 add_executable(simd-mt-bench src/bench.cpp)
+target_compile_features(simd-mt-bench PRIVATE cxx_auto_type)
+target_compile_features(simd-mt-bench PRIVATE cxx_alignas)
+target_compile_features(simd-mt-bench PRIVATE cxx_constexpr)
+
 target_include_directories(simd-mt-bench
     PUBLIC
         $<INSTALL_INTERFACE:include>
