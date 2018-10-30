@@ -7,7 +7,7 @@
 
 static void BM_IRNG_next(benchmark::State& state)
 {
-    IRNG rng(1);
+    alignas(256) IRNG rng(1);
 
     for (auto _ : state)
     {
@@ -19,7 +19,7 @@ BENCHMARK(BM_IRNG_next);
 
 static void BM_FRNG_next(benchmark::State& state)
 {
-    FRNG rng(1);
+    alignas(256) FRNG rng(1);
 
     for (auto _ : state)
     {
