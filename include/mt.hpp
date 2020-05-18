@@ -4,7 +4,7 @@
  * Distributed under the terms of the MIT License
  *******************************************************************************
  *
- * Filename: likely.h
+ * Filename: mt.hpp
  *
  * Description:
  *      SIMD-friendly Mersenne Twister PRNG
@@ -24,24 +24,49 @@
 #pragma once
 
 #include "likely.h"
+#include "assume_aligned.hpp"
+#include "is_power_of_two.hpp"
 
 #include <type_traits>
+#include <cstddef>
+#include <limits>
+#include <algorithm>
+
 
 template<typename ValueType, unsigned int Alignment, unsigned int NumberOfStreams, typename DerivedT>
 struct BasePRNG
 {
+    static_assert(std::alignment_of<ValueType>::value <= Alignment, "Alignment cannot be smaller than alignment of ValueType");
+    static_assert(is_power_of_two(Alignment), "Alignment must be a power of 2");
+
     using value_type = ValueType;
+    using value_ptr = value_type *;
     using derived_type = DerivedT;
+    using size_type = std::size_t;
+    using result_type = value_type;
 
     static constexpr unsigned int MTSZ = 624;
-    static constexpr unsigned int alignment = Alignment;
+    static constexpr size_type alignment = Alignment;
     static constexpr unsigned int NS = NumberOfStreams;
 
 
     unsigned int index;
 
-    alignas(alignment) value_type RES[MTSZ * NS];
-    alignas(alignment) unsigned int MT[MTSZ * NS];
+    alignas(alignment) value_type aRES[MTSZ * NS + alignment / sizeof (value_type)];
+    alignas(alignment) unsigned int aMT[MTSZ * NS + alignment / sizeof (unsigned int)];
+
+    inline
+    value_ptr RESp() const
+    {
+        return reinterpret_cast<value_ptr>((reinterpret_cast<size_type>(&aRES[0]) + alignment - 1) & ~(alignment - 1));
+    }
+
+    inline
+    unsigned int * MTp() const
+    {
+        return reinterpret_cast<unsigned int *>((reinterpret_cast<size_type>(&aMT[0]) + alignment - 1) & ~(alignment - 1));
+    }
+
 
     inline
     BasePRNG(int seed=1)
@@ -52,6 +77,8 @@ struct BasePRNG
     inline
     void init(int seed=1)
     {
+        auto MT = assume_aligned<alignment>(MTp());
+
         for (auto it = 0u; it < NS; ++it)
         {
             MT[it] = it + seed;
@@ -67,6 +94,7 @@ struct BasePRNG
     void generate()
     {
         auto MULT1 = 2567483615UL;
+        auto MT = assume_aligned<alignment>(MTp());
 
         for (unsigned int i = 0; i < 227 * NS; ++i)
         {
@@ -87,6 +115,8 @@ struct BasePRNG
             MT[(MTSZ - 1) * NS + it] = MT[(MTSZ - 1 - 227) * NS + it] ^ (y >> 1) ^ (y & 1 ? MULT1 : 0);
         }
 
+        auto RES = assume_aligned<alignment>(RESp());
+
         for (auto it = 0u; it < MTSZ * NS; ++it)
         {
             auto y = MT[it];
@@ -99,6 +129,15 @@ struct BasePRNG
     }
 
     inline
+    value_type peek() const
+    {
+        auto RES = assume_aligned<alignment>(RESp());
+        value_type y = RES[index];
+
+        return y;
+    }
+
+    inline
     value_type rand()
     {
         if (UNLIKELY(index == 0))
@@ -106,6 +145,7 @@ struct BasePRNG
             generate();
         }
 
+        auto RES = assume_aligned<alignment>(RESp());
         value_type y = RES[index];
 
         if (UNLIKELY(index == MTSZ * NS - 1))
@@ -124,6 +164,52 @@ struct BasePRNG
     value_type next()
     {
         return rand();
+    }
+
+    inline constexpr
+    value_type min() const
+    {
+        return std::numeric_limits<value_type>::min();
+    }
+
+    inline constexpr
+    value_type max() const
+    {
+        return std::numeric_limits<value_type>::max();
+    }
+
+    inline
+    value_type operator()()
+    {
+        return rand();
+    }
+
+    BasePRNG const & operator=(BasePRNG const & other)
+    {
+        if (this != &other)
+        {
+            index = other.index;
+            std::copy(other.RESp(), other.RESp() + MTSZ * NS, RESp());
+            std::copy(other.MTp(), other.MTp() + MTSZ * NS, MTp());
+        }
+
+        return *this;
+    }
+
+    bool operator==(BasePRNG const & other) const
+    {
+        if (this == &other)
+        {
+            return true;
+        }
+        else
+        {
+            return
+                index == other.index
+                and std::equal(RESp(), RESp() + MTSZ * NS, other.RESp())
+                and std::equal(MTp(), MTp() + MTSZ * NS, other.MTp())
+            ;
+        }
     }
 };
 
@@ -166,7 +252,7 @@ struct basic_IRNG : public BasePRNG<unsigned int, Alignment, NumberOfStreams, ba
     }
 };
 
-using IRNG = basic_IRNG<128, 8>;
+using IRNG = basic_IRNG<64, 8>;
 
 
 template<unsigned int Alignment=64, unsigned int NumberOfStreams=8>
@@ -189,4 +275,4 @@ struct basic_FRNG : public BasePRNG<float, Alignment, NumberOfStreams, basic_FRN
     }
 };
 
-using FRNG = basic_FRNG<128, 8>;
+using FRNG = basic_FRNG<64, 8>;
